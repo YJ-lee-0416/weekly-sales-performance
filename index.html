@@ -8,7 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
   color-scheme: dark;
   --bg: #0d0f14;
@@ -48,7 +47,6 @@ body {
   font-size: 13px;
   transition: background 0.2s, color 0.2s;
 }
-
 /* ── APP HEADER ── */
 .app-header {
   background: var(--surface);
@@ -66,7 +64,6 @@ body {
 .app-header-left { display: flex; align-items: flex-end; gap: 20px; flex: 1; min-width: 0; }
 .app-title { font-size: 18px; font-weight: 700; color: var(--text); white-space: nowrap; padding-bottom: 12px; }
 .app-title span { color: var(--accent); }
-
 /* TABS */
 .tabs { display: flex; gap: 2px; flex: 1; min-width: 0; }
 .tab-btn {
@@ -77,7 +74,6 @@ body {
 }
 .tab-btn:hover { color: var(--text2); background: var(--surface2); }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface2); }
-
 /* THEME TOGGLE */
 .theme-toggle-wrapper { display: flex; align-items: center; gap: 6px; padding-bottom: 8px; flex-shrink: 0; }
 .theme-toggle-label { font-size: 10px; color: var(--text3); text-align: right; line-height: 1.3; }
@@ -87,11 +83,9 @@ body {
   display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
 }
 .theme-toggle-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface3); }
-
 /* TAB CONTENTS */
 .tab-content { display: none; padding: 20px; }
 .tab-content.active { display: block; }
-
 /* ── BUTTONS ── */
 .btn {
   padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border2);
@@ -106,10 +100,7 @@ body {
 .btn-green { border-color: var(--green); color: var(--green); }
 .btn-green:hover { background: rgba(54,214,140,0.12); }
 .btn-sm { padding: 3px 8px; font-size: 11px; }
-
-/* ── 인라인 확인 다이얼로그 (confirm 대체) ── */
-/* [버그수정] iframe 샌드박스 환경에서 confirm()이 차단되므로
-   인라인 확인 UI로 대체. 삭제 버튼 클릭 시 해당 행/헤더에 오버레이 형태로 표시 */
+/* ── 인라인 확인 다이얼로그 ── */
 .inline-confirm {
   display: inline-flex;
   align-items: center;
@@ -126,19 +117,12 @@ body {
 .confirm-yes { background: var(--red); color: #fff; border-color: var(--red); }
 .confirm-no  { background: transparent; color: var(--text3); border-color: var(--border2); }
 .confirm-no:hover { color: var(--text); }
-
-/* ── SALES TABLE ──
- * 구조: 단일 <table>, thead 1개(컬럼명), tbody에 채널헤더행+데이터행 반복.
- * sticky 완전 제거 → 어떤 환경에서도 행 겹침 없음.
- */
+/* ── SALES TABLE ── */
 .table-wrap { overflow-x: auto; border: 1px solid var(--border2); border-radius: var(--radius); }
-
 table.sales-tbl {
   width: 100%; table-layout: fixed; border-collapse: collapse;
   font-size: 12px; min-width: 700px;
 }
-
-/* 컬럼명 행 (thead) — sticky 없이 일반 흐름으로 1번만 표시 */
 .sales-tbl thead th {
   background: var(--surface3);
   color: var(--text2); font-weight: 600;
@@ -146,8 +130,6 @@ table.sales-tbl {
   border-bottom: 2px solid var(--border2);
   white-space: nowrap;
 }
-
-/* 데이터 행 td */
 .sales-tbl td {
   padding: 6px 8px;
   border-bottom: 1px solid rgba(42,48,80,0.5);
@@ -155,18 +137,14 @@ table.sales-tbl {
 }
 body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 .sales-tbl tr:hover td { background: var(--surface2); }
-
-/* 채널 헤더 행 — tbody 안의 일반 tr, sticky 없음 */
 .ch-header-row td {
   background: var(--surface2);
   padding: 0;
   border-top: 2px solid var(--border2);
   border-bottom: 1px solid var(--border2);
 }
-/* 첫 번째 채널 헤더는 위 border 없음 */
 .ch-header-row.first-ch td { border-top: none; }
 .ch-header-row:hover td { background: var(--surface3); }
-
 .ch-inner {
   display: flex; align-items: center;
   padding: 7px 10px 7px 14px; gap: 6px; min-height: 38px;
@@ -174,29 +152,17 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 .ch-inner .ch-name-cell { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .ch-inner .ch-actions   { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .ch-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-/* 채널 마지막 데이터 행 구분선 */
 .ch-last-row td { border-bottom: 2px solid var(--border2) !important; }
-
-/* 데이터 없는 채널 */
 .empty-ch-row td { color: var(--text3); font-size: 11px; padding: 10px 14px; text-align: left; }
-
-/* 달성도 셀 */
 .achievement-cell { font-family: var(--mono); font-weight: 600; text-align: center; }
 .achievement-ok  { color: var(--green); }
 .achievement-low { color: var(--red); }
-
-/* editable cells */
 .editable { cursor: text; border-radius: 4px; min-width: 60px; display: inline-block; }
 .editable:hover { background: var(--surface3); }
 .editable:focus { outline: none; background: var(--surface3); box-shadow: inset 0 0 0 1px var(--accent); }
-
-/* WoW badges */
 .wow-pos { color: var(--green); font-weight: 600; font-family: var(--mono); }
 .wow-neg { color: var(--red); font-weight: 600; font-family: var(--mono); }
 .wow-na  { color: var(--text3); font-family: var(--mono); }
-
-/* period input */
 .period-input {
   background: transparent; border: none; color: var(--text);
   font-family: var(--mono); font-size: 11px; text-align: center;
@@ -204,15 +170,12 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 }
 .period-input:hover { background: var(--surface3); }
 .period-input:focus { outline: none; background: var(--surface3); box-shadow: inset 0 0 0 1px var(--accent); }
-
-/* upload btn */
 .upload-lbl {
   display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
   border-radius: 5px; border: 1px solid var(--border2); background: var(--surface3);
   color: var(--text3); font-size: 11px; cursor: pointer; transition: all 0.15s;
 }
 .upload-lbl:hover { border-color: var(--accent); color: var(--accent); }
-
 /* filter bar */
 .filter-bar {
   display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;
@@ -229,20 +192,31 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 .filter-chip:hover { border-color: var(--accent); color: var(--accent); }
 .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .filter-result-badge { margin-left: auto; font-size: 10px; color: var(--text3); font-family: var(--mono); }
-/* filter-hidden: applyFilter()가 style.display를 직접 제어하므로 CSS 클래스 불필요 */
 
-/* week-add bar */
+/* ── WEEK ADD BAR (주차 추가 + 저장/JSON 버튼 통합) ── */
 .week-add-bar {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  background: var(--surface2); padding: 10px 14px; border-radius: var(--radius);
+  background: var(--surface2); padding: 8px 14px; border-radius: var(--radius);
   border: 1px solid var(--border); margin-bottom: 14px;
 }
-.week-add-bar label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+.week-add-bar label { font-size: 12px; color: var(--text2); white-space: nowrap; font-weight: 600; }
 .week-add-bar input[type=date], .week-add-bar select {
   background: var(--surface3); border: 1px solid var(--border2); color: var(--text);
   padding: 4px 8px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
 }
 .week-preview { font-size: 11px; color: var(--accent); font-family: var(--mono); }
+/* 좌측 주차 추가 그룹 */
+.week-add-left {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;
+}
+/* 구분선 */
+.week-bar-divider {
+  width: 1px; height: 24px; background: var(--border2); flex-shrink: 0; margin: 0 4px;
+}
+/* 우측 저장/JSON 버튼 그룹 */
+.week-add-right {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap;
+}
 
 /* channel add bar */
 .ch-add-bar {
@@ -254,21 +228,17 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
   background: var(--surface3); border: 1px solid var(--border2); color: var(--text);
   padding: 5px 10px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
 }
-
 /* empty state */
 .tbl-empty-state {
   text-align: center; padding: 48px 20px; color: var(--text3);
 }
 .tbl-empty-state .empty-icon { font-size: 32px; margin-bottom: 10px; }
 .tbl-empty-state p { font-size: 13px; line-height: 1.7; }
-
 /* ── CALC TAB ── */
 .calc-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media(max-width:900px){ .calc-2col { grid-template-columns: 1fr; } }
 .calc-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
 .calc-panel h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-
-/* DOW table */
 .dow-tbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
 .dow-tbl th { color: var(--text3); font-weight: 500; padding: 4px 6px; text-align: center; }
 .dow-tbl td { padding: 4px 6px; text-align: center; vertical-align: middle; }
@@ -282,16 +252,12 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 .badge-individual { background: rgba(54,214,140,0.15); color: var(--green); border: 1px solid var(--green); }
 .badge-common     { background: rgba(247,201,72,0.15);  color: var(--yellow); border: 1px solid var(--yellow); }
 .badge-editing    { background: rgba(79,142,247,0.15);  color: var(--accent); border: 1px solid var(--accent); }
-
-/* upload zone */
 .upload-zone {
   border: 2px dashed var(--border2); border-radius: var(--radius); padding: 16px;
   text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
 }
 .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-glow); }
 .upload-zone p { font-size: 12px; color: var(--text3); margin-top: 4px; }
-
-/* situation btns */
 .situation-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .sit-btn {
   padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border2);
@@ -299,13 +265,9 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
   font-size: 11px; cursor: pointer; transition: all 0.15s;
 }
 .sit-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-
-/* result box */
 .result-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
 .result-amount { font-size: 26px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
 .result-detail { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.6; }
-
-/* week inputs grid */
 .week-inputs-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; margin-bottom: 12px; }
 .week-inputs-grid label { font-size: 12px; color: var(--text2); white-space: nowrap; }
 .num-inp {
@@ -315,15 +277,12 @@ body.light-mode .sales-tbl td { border-bottom-color: rgba(212,216,232,0.7); }
 }
 .num-inp:focus { outline: none; border-color: var(--accent); }
 .num-inp-unit { font-size: 11px; color: var(--text3); }
-
-/* channel select */
 .calc-channel-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 select.calc-sel {
   flex: 1; background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
   padding: 5px 10px; border-radius: 6px; font-family: var(--sans); font-size: 12px;
 }
 select.calc-sel:focus { outline: none; border-color: var(--accent); }
-
 /* ── MANUAL TAB ── */
 .manual-wrap { max-width: 800px; margin: 0 auto; }
 .manual-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
@@ -340,7 +299,6 @@ select.calc-sel:focus { outline: none; border-color: var(--accent); }
 .faq-q::before { content: "Q. "; color: var(--accent); }
 .faq-a { font-size: 12px; color: var(--text2); line-height: 1.5; padding-left: 20px; }
 .faq-a::before { content: "A. "; color: var(--green); font-weight: 600; }
-
 /* ── TOAST ── */
 #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
 .toast {
@@ -351,14 +309,11 @@ select.calc-sel:focus { outline: none; border-color: var(--accent); }
 .toast.error   { background: rgba(247,95,95,0.15);  border: 1px solid var(--red);   color: var(--red);   }
 .toast.info    { background: rgba(79,142,247,0.15); border: 1px solid var(--accent); color: var(--accent); }
 @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
-/* misc */
 .text-mono { font-family: var(--mono); }
 select, input { color-scheme: inherit; }
 </style>
 </head>
 <body>
-
 <div class="app-header">
   <div class="app-header-left">
     <div class="app-title">📊 주차별 <span>매출 성과표</span></div>
@@ -373,10 +328,8 @@ select, input { color-scheme: inherit; }
     <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-icon">☀️</button>
   </div>
 </div>
-
 <!-- ===================== TAB 1: 매출 현황 ===================== -->
 <div id="tab-sales" class="tab-content active">
-
   <div class="ch-add-bar">
     <span style="font-size:12px;color:var(--text2);font-weight:600;">채널 추가</span>
     <select id="ch-select">
@@ -394,12 +347,23 @@ select, input { color-scheme: inherit; }
     <button class="btn btn-danger btn-sm" id="btn-clear-all" onclick="requestClearAll()">🗑 전체 초기화</button>
   </div>
 
+  <!-- 주차 추가 바 — 저장/JSON 버튼 우측 통합 -->
   <div class="week-add-bar">
-    <label>주차 추가</label>
-    <input type="date" id="week-date-input" onchange="updateWeekAddPreview()">
-    <span class="week-preview" id="week-add-preview"></span>
-    <select id="week-add-target"><option value="all">전체 채널</option></select>
-    <button class="btn btn-sm" onclick="addWeekRow()">+ 주차 추가</button>
+    <div class="week-add-left">
+      <label>주차 추가</label>
+      <input type="date" id="week-date-input" onchange="updateWeekAddPreview()">
+      <span class="week-preview" id="week-add-preview"></span>
+      <select id="week-add-target"><option value="all">전체 채널</option></select>
+      <button class="btn btn-sm" onclick="addWeekRow()">+ 주차 추가</button>
+    </div>
+    <div class="week-bar-divider"></div>
+    <div class="week-add-right">
+      <button class="btn btn-primary btn-sm" onclick="saveToStorage()" id="save-btn">💾 저장</button>
+      <button class="btn btn-sm" onclick="exportToJSON()">⬇ JSON 내보내기</button>
+      <label class="btn btn-sm" style="cursor:pointer;">⬆ JSON 가져오기
+        <input type="file" accept=".json" style="display:none" onchange="importFromJSON(this)">
+      </label>
+    </div>
   </div>
 
   <div class="filter-bar" id="filter-bar">
@@ -410,8 +374,6 @@ select, input { color-scheme: inherit; }
     <div class="filter-chip-group" id="filter-channel-chips"></div>
     <div class="filter-result-badge" id="filter-result-badge"></div>
   </div>
-
-  <!-- 매출 테이블: thead(컬럼명 1개) + tbody(채널헤더행+데이터행) -->
   <div class="table-wrap">
     <table class="sales-tbl" id="sales-tbl">
       <colgroup>
@@ -428,16 +390,7 @@ select, input { color-scheme: inherit; }
       <tbody id="sales-tbody"></tbody>
     </table>
   </div>
-
-  <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-    <button class="btn btn-primary" onclick="saveToStorage()" id="save-btn">💾 저장</button>
-    <button class="btn" onclick="exportToJSON()">⬇ JSON 내보내기</button>
-    <label class="btn" style="cursor:pointer;">⬆ JSON 가져오기
-      <input type="file" accept=".json" style="display:none" onchange="importFromJSON(this)">
-    </label>
-  </div>
 </div>
-
 <!-- ===================== TAB 2: 예상매출 계산 ===================== -->
 <div id="tab-calc" class="tab-content">
   <div class="calc-2col">
@@ -471,7 +424,6 @@ select, input { color-scheme: inherit; }
       </div>
       <div id="dow-upload-result" style="font-size:11px;color:var(--text3);margin-top:4px;"></div>
     </div>
-
     <div class="calc-panel">
       <h3>② 주간 기준 매출 + ③ 예상매출 계산</h3>
       <div class="calc-channel-row">
@@ -520,7 +472,6 @@ select, input { color-scheme: inherit; }
     </div>
   </div>
 </div>
-
 <!-- ===================== TAB 3: 사용 설명서 ===================== -->
 <div id="tab-manual" class="tab-content">
   <div class="manual-wrap">
@@ -553,7 +504,7 @@ select, input { color-scheme: inherit; }
         <div class="step-num">4</div>
         <div class="step-content">
           <div class="step-title">저장</div>
-          <div class="step-desc"><b>💾 저장</b>을 클릭하면 브라우저 로컬스토리지에 저장됩니다. 백업은 <b>⬇ JSON 내보내기</b>를 활용하세요.</div>
+          <div class="step-desc">주차 추가 바 우측의 <b>💾 저장</b>을 클릭하면 브라우저 로컬스토리지에 저장됩니다. 백업은 <b>⬇ JSON 내보내기</b>를 활용하세요.</div>
         </div>
       </div>
       <div class="manual-faq">
@@ -594,23 +545,15 @@ select, input { color-scheme: inherit; }
     </div>
   </div>
 </div>
-
 <div id="toast-container"></div>
-
 <script>
-/* ==========================================================
-   toggleTheme: DOMContentLoaded 밖에 선언 (onclick= 참조용)
-   ========================================================== */
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
   try { localStorage.setItem('appTheme', isLight ? 'light' : 'dark'); } catch(e) {}
   const el = document.getElementById('theme-toggle-icon');
   if (el) el.textContent = isLight ? '🌙' : '☀️';
 }
-
 document.addEventListener('DOMContentLoaded', function () {
-
-/* ── THEME INIT ── */
 (function () {
   let t = 'dark';
   try { t = localStorage.getItem('appTheme') || 'dark'; } catch(e) {}
@@ -618,14 +561,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const el = document.getElementById('theme-toggle-icon');
   if (el) el.textContent = t === 'light' ? '🌙' : '☀️';
 })();
-
-/* ── CONSTANTS ── */
 const STORAGE_KEY  = 'salesReportData_v2';
 const CHANNEL_LIST = ['스마트스토어','쿠팡','11번가','SSG','GSshop','지마켓','옥션','오늘의집','톡스토어','SK스토아','롯데아이몰','CJ온스타일'];
 const CH_COLORS    = ['#4f8ef7','#36d68c','#f7c948','#f75f5f','#6c5ef7','#f7936e','#56cfb2','#e879f9','#38bdf8','#fb7185','#a3e635','#fb923c'];
 const DOW_KEYS     = ['월','화','수','목','금','토','일'];
-
-/* ── STATE ── */
 let state = {
   channels: [],
   commonDow: { 일:14.3, 월:14.3, 화:14.3, 수:14.3, 목:14.3, 금:14.3, 토:14.3 },
@@ -635,13 +574,9 @@ let currentSituation    = 'normal';
 let correctionMultiplier = 1.0;
 let editingChannel      = null;
 let filterState         = { periods: new Set(), channels: new Set() };
-
-/* ── STORAGE ── */
 const _mem = {};
 function _storageSet(k, v) { try { localStorage.setItem(k, v); } catch(e) { _mem[k] = v; } }
 function _storageGet(k) { try { const v = localStorage.getItem(k); if (v !== null) return v; } catch(e) {} return _mem[k] || null; }
-
-/* ── INIT ── */
 function init() {
   const saved = _storageGet(STORAGE_KEY);
   if (saved) {
@@ -653,10 +588,7 @@ function init() {
   setSituation('normal');
   updateWeekAddPreview();
 }
-
-/* ── AUTO SAVE ── */
 function autoSave() { try { _storageSet(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
-
 function saveToStorage() {
   autoSave();
   const btn = document.getElementById('save-btn');
@@ -668,7 +600,6 @@ function saveToStorage() {
   }
   showToast('데이터가 저장되었습니다.', 'success');
 }
-
 function exportToJSON() {
   autoSave();
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
@@ -678,11 +609,9 @@ function exportToJSON() {
   const now  = new Date();
   a.download = `sales_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
   a.click();
-  /* [버그수정] 메모리 누수 방지: URL 해제 */
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast('JSON 파일이 저장되었습니다.', 'success');
 }
-
 function importFromJSON(input) {
   const file = input.files[0];
   if (!file) return;
@@ -704,14 +633,11 @@ function importFromJSON(input) {
   reader.readAsText(file);
   input.value = '';
 }
-
-/* ── WEEK RANGES ── */
 function rebuildWeekRanges() {
   const set = new Set();
   state.channels.forEach(ch => ch.rows.forEach(r => { if (r.period) set.add(r.period); }));
   state.weekRanges = Array.from(set).sort((a, b) => parsePeriodStart(a) - parsePeriodStart(b));
 }
-
 function parsePeriodStart(period) {
   if (!period) return 0;
   const m4 = period.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
@@ -720,28 +646,24 @@ function parsePeriodStart(period) {
   if (m2) { const mo = parseInt(m2[1]), d = parseInt(m2[2]); return (mo <= 3 ? 10000 : 0) + mo * 100 + d; }
   return 0;
 }
-
 function getMondayOfWeek(d) {
   const dt = new Date(d);
   const day = dt.getDay();
   dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
   return dt;
 }
-
 function formatPeriod(monday) {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
   return `${fmt(monday)}~${fmt(sunday)}`;
 }
-
 function updateWeekAddPreview() {
   const val  = document.getElementById('week-date-input').value;
   const prev = document.getElementById('week-add-preview');
   if (!val) { if (prev) prev.textContent = ''; return; }
   if (prev) prev.textContent = formatPeriod(getMondayOfWeek(new Date(val)));
 }
-
 function addWeekRow() {
   const val = document.getElementById('week-date-input').value;
   if (!val) { showToast('날짜를 선택하세요.', 'error'); return; }
@@ -763,8 +685,6 @@ function addWeekRow() {
   autoSave();
   showToast(`주차 "${period}" 추가됨.`, 'success');
 }
-
-/* ── CHANNEL MANAGEMENT ── */
 function addChannel() {
   const sel    = document.getElementById('ch-select');
   const direct = document.getElementById('ch-direct');
@@ -781,7 +701,6 @@ function addChannel() {
   autoSave();
   showToast(`"${name}" 채널 추가됨.`, 'success');
 }
-
 function addAllChannels() {
   let added = 0;
   CHANNEL_LIST.forEach(name => {
@@ -797,11 +716,6 @@ function addAllChannels() {
   autoSave();
   showToast(`${added}개 채널 추가됨.`, 'success');
 }
-
-/* [버그수정] confirm() 차단 대응 — 인라인 확인 UI 방식으로 전환
-   requestDeleteChannel / requestClearAll 은 확인 UI를 먼저 보여주고,
-   execDeleteChannel / execClearAll 이 실제 삭제를 수행 */
-
 function requestDeleteChannel(ci) {
   const tbody = document.getElementById('sales-tbody');
   if (!tbody) return;
@@ -818,7 +732,6 @@ function requestDeleteChannel(ci) {
     <button class="confirm-no"  onclick="this.closest('.inline-confirm').remove()">아니오</button>`;
   actions.appendChild(div);
 }
-
 function execDeleteChannel(ci) {
   const name = (state.channels[ci] || {}).name;
   if (!name) return;
@@ -830,11 +743,9 @@ function execDeleteChannel(ci) {
   autoSave();
   showToast(`"${name}" 채널이 삭제되었습니다.`, 'success');
 }
-
 function requestClearAll() {
   const btn = document.getElementById('btn-clear-all');
   if (!btn) return;
-  /* 이미 확인 UI가 열려 있으면 닫기 */
   const sibling = btn.nextElementSibling;
   if (sibling && sibling.classList.contains('inline-confirm')) { sibling.remove(); return; }
   const div = document.createElement('div');
@@ -844,13 +755,11 @@ function requestClearAll() {
     <button class="confirm-no"  onclick="this.closest('.inline-confirm').remove()">아니오</button>`;
   btn.insertAdjacentElement('afterend', div);
 }
-
 function execClearAll() {
   state.channels  = [];
   state.weekRanges = [];
   filterState.periods.clear();
   filterState.channels.clear();
-  /* 확인 UI 제거 */
   const confirm = document.querySelector('#btn-clear-all + .inline-confirm');
   if (confirm) confirm.remove();
   renderSalesTable();
@@ -858,8 +767,6 @@ function execClearAll() {
   autoSave();
   showToast('전체 데이터가 초기화되었습니다.', 'success');
 }
-
-/* [버그수정] deleteRow 도 인라인 확인 방식 적용 */
 function requestDeleteRow(ci, ri) {
   const tbody = document.getElementById('sales-tbody');
   if (!tbody) return;
@@ -877,7 +784,6 @@ function requestDeleteRow(ci, ri) {
     <button class="confirm-no"  onclick="this.closest('.inline-confirm').remove()">아니오</button>`;
   lastTd.appendChild(div);
 }
-
 function execDeleteRow(ci, ri) {
   if (!state.channels[ci]) return;
   state.channels[ci].rows.splice(ri, 1);
@@ -886,54 +792,43 @@ function execDeleteRow(ci, ri) {
   populateChannelSelects();
   autoSave();
 }
-
 document.getElementById('ch-select').addEventListener('change', function () {
   document.getElementById('ch-direct').style.display = this.value === '__direct__' ? 'inline-block' : 'none';
 });
-
-/* ── FILTER ── */
 function getPeriodMonthKey(period) {
   if (!period) return null;
   const m = period.match(/^(\d{4})\/(\d{2})/);
   return m ? `${m[1]}/${m[2]}` : null;
 }
-
 function renderFilterChips() {
   const pw = document.getElementById('filter-period-chips');
   const cw = document.getElementById('filter-channel-chips');
   if (!pw || !cw) return;
-
   const monthSet = new Set();
   state.channels.forEach(ch => ch.rows.forEach(r => { const k = getPeriodMonthKey(r.period); if (k) monthSet.add(k); }));
   const months = Array.from(monthSet).sort();
   const allPeriod = filterState.periods.size === 0;
-
   pw.innerHTML = `<span class="filter-chip ${allPeriod ? 'active' : ''}" onclick="togglePeriodFilter('__all__')">전체</span>`
     + months.map(m => {
       const [y, mo] = m.split('/');
       return `<span class="filter-chip ${filterState.periods.has(m) ? 'active' : ''}" onclick="togglePeriodFilter('${m}')">${y}.${parseInt(mo)}월</span>`;
     }).join('');
-
   const allCh = filterState.channels.size === 0;
   cw.innerHTML = `<span class="filter-chip ${allCh ? 'active' : ''}" onclick="toggleChannelFilter('__all__')">전체</span>`
     + state.channels.map(ch =>
       `<span class="filter-chip ${filterState.channels.has(ch.name) ? 'active' : ''}" onclick="toggleChannelFilter('${escHtml(ch.name)}')">${escHtml(ch.name)}</span>`
     ).join('');
 }
-
 function togglePeriodFilter(val) {
   if (val === '__all__') { filterState.periods.clear(); }
   else { filterState.periods.has(val) ? filterState.periods.delete(val) : filterState.periods.add(val); }
   renderFilterChips(); applyFilter();
 }
-
 function toggleChannelFilter(val) {
   if (val === '__all__') { filterState.channels.clear(); }
   else { filterState.channels.has(val) ? filterState.channels.delete(val) : filterState.channels.add(val); }
   renderFilterChips(); applyFilter();
 }
-
-/* applyFilter: 단일 tbody 기반 — 채널 헤더행/데이터행 각각 처리 */
 function applyFilter() {
   const tbody = document.getElementById('sales-tbody');
   if (!tbody) return;
@@ -941,7 +836,6 @@ function applyFilter() {
   const allChannels = filterState.channels.size === 0;
   let visible = 0;
   let currentCh = null;
-
   Array.from(tbody.children).forEach(row => {
     if (row.classList.contains('ch-header-row')) {
       currentCh = row.dataset.ch;
@@ -951,7 +845,6 @@ function applyFilter() {
       const ok = allChannels || filterState.channels.has(currentCh);
       row.style.display = ok ? '' : 'none';
     } else {
-      /* 데이터 행 */
       const chOk     = allChannels || filterState.channels.has(currentCh);
       const monthKey = getPeriodMonthKey(row.dataset.period || '');
       const pOk      = allPeriods || (monthKey && filterState.periods.has(monthKey));
@@ -960,23 +853,12 @@ function applyFilter() {
       if (ok) visible++;
     }
   });
-
   const badge = document.getElementById('filter-result-badge');
   if (badge) badge.textContent = (!allPeriods || !allChannels) ? `${visible}개 행 표시 중` : '';
 }
-
-/* ── RENDER SALES TABLE ──
- * 구조: 단일 <table>.
- *   thead  : 컬럼명 행 1개 (HTML에 고정, JS에서 건드리지 않음)
- *   tbody  : 채널헤더행(ch-header-row) + 데이터행 반복
- *
- * sticky 완전 제거. 채널헤더행은 일반 흐름 tr이므로
- * thead나 다른 행과 절대 겹치지 않음.
- */
 function renderSalesTable() {
   const tbody = document.getElementById('sales-tbody');
   if (!tbody) return;
-
   if (state.channels.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8">
       <div class="tbl-empty-state">
@@ -988,16 +870,11 @@ function renderSalesTable() {
     updateWeekAddTargetSelect();
     return;
   }
-
   let html = '';
-
   state.channels.forEach((ch, ci) => {
     const color   = CH_COLORS[ci % CH_COLORS.length];
     const isFirst = ci === 0;
-
     ch.rows.sort((a, b) => parsePeriodStart(a.period) - parsePeriodStart(b.period));
-
-    /* 채널 헤더 행 — 일반 tr, position:static, 겹침 없음 */
     html += `<tr class="ch-header-row${isFirst ? ' first-ch' : ''}" data-ch="${escAttr(ch.name)}" data-ci="${ci}">
       <td colspan="8">
         <div class="ch-inner">
@@ -1015,7 +892,6 @@ function renderSalesTable() {
         </div>
       </td>
     </tr>`;
-
     if (ch.rows.length === 0) {
       html += `<tr class="empty-ch-row" data-ch="${escAttr(ch.name)}">
         <td colspan="8">주차 데이터 없음 — 위의 "+ 주차" 버튼으로 추가하세요.</td>
@@ -1048,27 +924,19 @@ function renderSalesTable() {
       });
     }
   });
-
   tbody.innerHTML = html;
-
-  /* reason: textContent로 안전하게 주입 */
   state.channels.forEach((ch, ci) => {
     ch.rows.forEach((row, ri) => {
       const span = tbody.querySelector(`span[data-reason-ci="${ci}"][data-reason-ri="${ri}"]`);
       if (span && row.reason) span.textContent = row.reason;
-      
-      /* 달성도 초기 계산 */
       const tr = tbody.querySelector(`tr[data-ci="${ci}"][data-ri="${ri}"]`);
       if (tr) updateAchievementCell(tr, row);
     });
   });
-
   renderFilterChips();
   applyFilter();
   updateWeekAddTargetSelect();
 }
-
-/* [버그수정] calcWoW: 이전 행의 actual이 없는 경우도 올바르게 처리 */
 function calcWoW(rows, ri) {
   if (ri === 0) return { cls: 'wow-na', text: '시작' };
   const cur  = parseAmount(rows[ri].actual);
@@ -1080,9 +948,6 @@ function calcWoW(rows, ri) {
   if (pct < 0) return { cls: 'wow-neg', text: `${pct}%` };
   return { cls: 'wow-na', text: '0%' };
 }
-
-/* [버그수정] updatePeriod: 변경 후 필터 칩도 즉시 갱신 */
-/* 달성도 셀 업데이트 (예상매출액, 실매출액 변경 시 자동 계산) */
 function updateAchievementCell(tr, row) {
   const cell = tr.querySelector('.achievement-cell');
   if (!cell) return;
@@ -1093,11 +958,9 @@ function updateAchievementCell(tr, row) {
   } else {
     const pct = Math.round((act / exp) * 100);
     cell.textContent = pct + '%';
-    /* 달성도에 따른 색상 구분: 100% 이상 초록, 미만 빨강 */
     cell.className = 'achievement-cell text-mono ' + (pct >= 100 ? 'achievement-ok' : 'achievement-low');
   }
 }
-
 function updatePeriod(ci, ri, val) {
   if (!state.channels[ci]) return;
   state.channels[ci].rows[ri].period = val;
@@ -1106,10 +969,6 @@ function updatePeriod(ci, ri, val) {
   populateChannelSelects();
   autoSave();
 }
-
-/* [버그수정] updateField:
-   1. 숫자 입력을 지웠을 때 NaN 텍스트 방지
-   2. actual 변경 시 현재 행 + 다음 행의 WoW 모두 갱신 */
 function updateField(ci, ri, field, el) {
   if (!state.channels[ci]) return;
   let val;
@@ -1123,8 +982,6 @@ function updateField(ci, ri, field, el) {
   }
   state.channels[ci].rows[ri][field] = val;
   autoSave();
-
-  /* 달성도 + WoW 재계산: actual 또는 expected 변경 시 */
   if (field === 'actual' || field === 'expected') {
     const tbody = document.getElementById('sales-tbody');
     const tr = tbody.querySelector(`tr[data-ci="${ci}"][data-ri="${ri}"]`);
@@ -1132,15 +989,13 @@ function updateField(ci, ri, field, el) {
       updateAchievementCell(tr, state.channels[ci].rows[ri]);
     }
   }
-
-  /* WoW 재계산: actual 변경 시 현재 행 + 다음 행 */
   if (field === 'actual') {
     const tbody = document.getElementById('sales-tbody');
     [ri, ri + 1].forEach(targetRi => {
       if (!state.channels[ci].rows[targetRi]) return;
       const tr = tbody.querySelector(`tr[data-ci="${ci}"][data-ri="${targetRi}"]`);
       if (!tr) return;
-      const wowCell = tr.children[5];  /* 달성도 추가로 인해 인덱스 5로 변경 (기존 4) */
+      const wowCell = tr.children[5];
       if (!wowCell) return;
       const wow = calcWoW(state.channels[ci].rows, targetRi);
       wowCell.className = wow.cls;
@@ -1148,14 +1003,11 @@ function updateField(ci, ri, field, el) {
     });
   }
 }
-
-/* [버그수정] addWeekToChannel: 빈 period 행 추가 대신 오늘 날짜 주차를 기본값으로 */
 function addWeekToChannel(ci) {
   if (!state.channels[ci]) return;
   const today  = new Date();
   const monday = getMondayOfWeek(today);
   const period = formatPeriod(monday);
-  /* 이미 같은 주차 있으면 빈 period로 추가 (편집 가능) */
   const newPeriod = state.channels[ci].rows.find(r => r.period === period) ? '' : period;
   state.channels[ci].rows.push({ period: newPeriod, expected: '', actual: '', reason: '' });
   rebuildWeekRanges();
@@ -1163,7 +1015,6 @@ function addWeekToChannel(ci) {
   populateChannelSelects();
   autoSave();
 }
-
 function updateWeekAddTargetSelect() {
   const sel = document.getElementById('week-add-target');
   if (!sel) return;
@@ -1172,8 +1023,6 @@ function updateWeekAddTargetSelect() {
     + state.channels.map((ch, i) => `<option value="${i}">${escHtml(ch.name)}</option>`).join('');
   if (Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
 }
-
-/* ── COLUMN DETECTION ── */
 const ORDER_NUM_COLS = ['상품주문번호','주문번호','고객주문번호'];
 const DATE_COL_KEYS  = ['결제완료일','주문결제완료일','결제일','주문일','결제일시','주문일시','결제날짜','주문날짜','정산기준일'];
 const FEE_PATTERNS   = ['수수료','할인','공제','추가정산','빠른정산','선지급','위약금','취소배송비','도서산간'];
@@ -1186,11 +1035,9 @@ const AMT_SCORE_MAP  = [
   { score: 60, patterns:['판매가 * 수량','판매가*수량','판매가×수량'] },
   { score: 30, patterns:['정산금액'] },
 ];
-
 const normCol  = s => String(s).replace(/\s/g,'').toLowerCase();
 const isFeeCol = h => FEE_PATTERNS.some(p => normCol(h).includes(normCol(p)));
 const matchCol = (headers, pat) => headers.find(h => normCol(h) === normCol(pat)) || headers.find(h => normCol(h).includes(normCol(pat))) || null;
-
 function pickBestAmtCol(headers) {
   let best = { col: null, score: -1 };
   AMT_SCORE_MAP.forEach(({ score, patterns }) => {
@@ -1202,15 +1049,12 @@ function pickBestAmtCol(headers) {
   if (!best.col) best.col = headers.find(h => /결제|주문|금액/.test(h) && !isFeeCol(h)) || null;
   return best.col;
 }
-
 function pickDateCol(headers) {
   for (const p of DATE_COL_KEYS) { const col = matchCol(headers, p); if (col) return { col, isOrderNum: false }; }
   for (const p of ORDER_NUM_COLS) { const col = matchCol(headers, p); if (col) return { col, isOrderNum: true }; }
   const col = headers.find(h => /결제완료|결제일|주문결제|주문일/.test(h)) || null;
   return col ? { col, isOrderNum: false } : null;
 }
-
-/* ── DATE / AMOUNT PARSING ── */
 function parseDateValue(raw, isOrderNum) {
   if (raw === null || raw === undefined || raw === '') return null;
   if (isOrderNum) {
@@ -1223,7 +1067,6 @@ function parseDateValue(raw, isOrderNum) {
   }
   return parseDate(raw);
 }
-
 function parseDate(raw) {
   if (!raw && raw !== 0) return null;
   if (raw instanceof Date) return isNaN(raw) ? null : raw;
@@ -1238,15 +1081,12 @@ function parseDate(raw) {
   if (m) return new Date(+m[3], +m[1]-1, +m[2]);
   const d = new Date(s); return isNaN(d) ? null : d;
 }
-
 function parseAmount(val) {
   if (val === '' || val === null || val === undefined) return NaN;
   if (typeof val === 'number') return val;
   const n = parseFloat(String(val).replace(/[,\s₩]/g,''));
   return isNaN(n) ? NaN : n;
 }
-
-/* ── EXCEL UPLOAD (매출 현황) ── */
 function handleExcelUpload(event, ci) {
   const file = event.target.files[0];
   if (!file) return;
@@ -1264,7 +1104,6 @@ function handleExcelUpload(event, ci) {
   if (ext === 'csv') reader.readAsText(file, 'utf-8'); else reader.readAsBinaryString(file);
   event.target.value = '';
 }
-
 function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim());
   if (lines.length < 2) return [];
@@ -1277,7 +1116,6 @@ function parseCSV(text) {
     return obj;
   });
 }
-
 function processExcelData(records, ci) {
   if (!records || !records.length) { showToast('데이터가 없습니다.', 'error'); return; }
   const headers    = Object.keys(records[0]);
@@ -1286,7 +1124,6 @@ function processExcelData(records, ci) {
   const { col: dateCol, isOrderNum } = dateResult;
   const amtCol = pickBestAmtCol(headers);
   if (!amtCol) { showToast('금액 컬럼을 찾을 수 없습니다.', 'error'); return; }
-
   const weekMap = {};
   let parsed = 0;
   records.forEach(row => {
@@ -1297,27 +1134,22 @@ function processExcelData(records, ci) {
     weekMap[key] = (weekMap[key] || 0) + amt;
     parsed++;
   });
-
   if (!Object.keys(weekMap).length) {
     showToast(`유효 데이터 없음 (날짜: ${dateCol}${isOrderNum?' [주문번호형식]':''}, 금액: ${amtCol})`, 'error');
     return;
   }
-
   let matched = 0, added = 0;
   Object.entries(weekMap).forEach(([period, total]) => {
     const exist = state.channels[ci].rows.find(r => r.period === period);
     if (exist) { exist.actual = Math.round(total); matched++; }
     else { state.channels[ci].rows.push({ period, expected:'', actual: Math.round(total), reason:'' }); added++; }
   });
-
   rebuildWeekRanges();
   renderSalesTable();
   populateChannelSelects();
   autoSave();
   showToast(`업로드 완료: ${parsed}건 파싱, ${matched}개 업데이트, ${added}개 신규 추가.`, 'success');
 }
-
-/* ── DOW ── */
 function getCurrentDow() {
   if (editingChannel) {
     const ch = state.channels.find(c => c.name === editingChannel);
@@ -1325,7 +1157,6 @@ function getCurrentDow() {
   }
   return state.commonDow;
 }
-
 function renderDowTable() {
   const tbody = document.getElementById('dow-tbody');
   if (!tbody) return;
@@ -1340,7 +1171,6 @@ function renderDowTable() {
       <td><div class="dow-bar" style="width:${Math.round(val/max*80)}px;"></div></td>
     </tr>`;
   }).join('');
-
   const wrap = document.getElementById('dow-status-badge-wrap');
   if (!wrap) return;
   if (editingChannel) {
@@ -1352,7 +1182,6 @@ function renderDowTable() {
     wrap.innerHTML = `<span class="dow-status-badge badge-editing">📐 공통 요일지수 편집 중</span>`;
   }
 }
-
 function updateDow(key, val) {
   const n = parseFloat(val); if (isNaN(n)) return;
   if (editingChannel) {
@@ -1361,7 +1190,6 @@ function updateDow(key, val) {
   } else { state.commonDow[key] = n; }
   renderDowTable(); calcFinalExpected(); autoSave();
 }
-
 function normalizeDow() {
   const dow = getCurrentDow();
   const sum = DOW_KEYS.reduce((s, k) => s + (dow[k] || 0), 0);
@@ -1369,13 +1197,11 @@ function normalizeDow() {
   DOW_KEYS.forEach(k => dow[k] = parseFloat(((dow[k] || 0) / sum * 100).toFixed(2)));
   renderDowTable(); calcFinalExpected(); autoSave();
 }
-
 function equalDow() {
   const dow = getCurrentDow();
   DOW_KEYS.forEach(k => dow[k] = parseFloat((100/7).toFixed(2)));
   renderDowTable(); calcFinalExpected(); autoSave();
 }
-
 function applyDowToChannel() {
   if (!editingChannel) { showToast('채널을 먼저 선택하세요.', 'error'); return; }
   const ch = state.channels.find(c => c.name === editingChannel);
@@ -1384,7 +1210,6 @@ function applyDowToChannel() {
   autoSave();
   showToast(`"${editingChannel}" 요일지수 적용됨.`, 'success');
 }
-
 function resetPerChannelDow() {
   if (!editingChannel) { showToast('채널을 먼저 선택하세요.', 'info'); return; }
   const ch = state.channels.find(c => c.name === editingChannel);
@@ -1393,14 +1218,11 @@ function resetPerChannelDow() {
   renderDowTable();
   showToast('개별 요일지수가 초기화되었습니다.', 'success');
 }
-
 function onCalcChannelChange() {
   const sel = document.getElementById('calc-channel-select');
   editingChannel = sel ? (sel.value || null) : null;
   renderDowTable(); calcFinalExpected();
 }
-
-/* ── DOW UPLOAD ── */
 function handleDowDrop(event) {
   event.preventDefault();
   document.getElementById('dow-upload-zone').classList.remove('dragover');
@@ -1408,7 +1230,6 @@ function handleDowDrop(event) {
   if (file) processDowFile(file);
 }
 function handleDowUpload(input) { const file = input.files[0]; if (file) processDowFile(file); input.value = ''; }
-
 function processDowFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   const reader = new FileReader();
@@ -1423,7 +1244,6 @@ function processDowFile(file) {
   };
   if (ext === 'csv') reader.readAsText(file, 'utf-8'); else reader.readAsBinaryString(file);
 }
-
 function extractDowFromRecords(records) {
   if (!records || !records.length) { showToast('데이터가 없습니다.', 'error'); return; }
   const headers    = Object.keys(records[0]);
@@ -1432,7 +1252,6 @@ function extractDowFromRecords(records) {
   const amtCol = pickBestAmtCol(headers);
   if (!amtCol) { showToast('금액 컬럼 없음.', 'error'); return; }
   const { col: dateCol, isOrderNum } = dateResult;
-
   const totals = { 월:0, 화:0, 수:0, 목:0, 금:0, 토:0, 일:0 };
   const names  = ['일','월','화','수','목','금','토'];
   let total = 0;
@@ -1443,7 +1262,6 @@ function extractDowFromRecords(records) {
     totals[names[d.getDay()]] += a; total += a;
   });
   if (total === 0) { showToast('유효 데이터 없음.', 'error'); return; }
-
   const dow = getCurrentDow();
   DOW_KEYS.forEach(k => dow[k] = parseFloat((totals[k] / total * 100).toFixed(2)));
   renderDowTable(); calcFinalExpected(); autoSave();
@@ -1451,8 +1269,6 @@ function extractDowFromRecords(records) {
   if (res) res.textContent = `✅ 요일지수 자동 계산 완료 (${records.length}건 분석)`;
   showToast('요일지수가 업데이트되었습니다.', 'success');
 }
-
-/* ── CALC EXPECTED ── */
 function setSituation(sit) {
   currentSituation = sit;
   const map = { normal:100, pre_event:115, on_event:140, post_event:75 };
@@ -1462,7 +1278,6 @@ function setSituation(sit) {
   correctionMultiplier = (map[sit] || 100) / 100;
   updateCorrectionLabel(); calcFinalExpected();
 }
-
 function updateCorrectionLabel() {
   const slider = document.getElementById('correction-slider');
   const label  = document.getElementById('correction-label');
@@ -1470,29 +1285,23 @@ function updateCorrectionLabel() {
   correctionMultiplier = parseInt(slider.value) / 100;
   label.textContent = `×${correctionMultiplier.toFixed(2)}`;
 }
-
-/* [버그수정] formatNumInput: 빈 값 지울 때 NaN 방지 */
 function formatNumInput(el) {
   const raw = el.value.replace(/[^\d]/g, '');
   el.value = raw ? parseInt(raw, 10).toLocaleString('ko-KR') : '';
 }
-
 function getNumInputVal(id) {
   const el = document.getElementById(id);
   if (!el) return 0;
   return parseInt(el.value.replace(/[^\d]/g, ''), 10) || 0;
 }
-
 function calcFinalExpected() {
   const partial = getNumInputVal('inp-mon') + getNumInputVal('inp-tue') + getNumInputVal('inp-wed');
   const summary = document.getElementById('partial-summary');
   if (summary) summary.textContent = partial > 0
     ? `월+화+수 합계: ${partial.toLocaleString('ko-KR')}원 | 일평균: ${Math.round(partial/3).toLocaleString('ko-KR')}원` : '';
-
   const amountEl = document.getElementById('result-amount');
   const detailEl = document.getElementById('result-detail');
   if (partial === 0) { if (amountEl) amountEl.textContent = '—'; if (detailEl) detailEl.textContent = ''; return; }
-
   const chName = document.getElementById('result-channel-select')?.value || '';
   let dow, src;
   if (chName) {
@@ -1500,10 +1309,8 @@ function calcFinalExpected() {
     if (ch && ch.perDow) { dow = ch.perDow; src = `"${chName}" 개별 지수`; }
     else { dow = state.commonDow; src = `"${chName}" → 공통 지수`; }
   } else { dow = state.commonDow; src = '공통 지수'; }
-
   const pct = ((dow['월']||0) + (dow['화']||0) + (dow['수']||0)) / 100;
   if (pct <= 0) { if (amountEl) amountEl.textContent = '요일지수 0 — 계산 불가'; return; }
-
   const estimated = Math.round(partial / pct * correctionMultiplier);
   if (amountEl) amountEl.textContent = estimated.toLocaleString('ko-KR') + '원';
   if (detailEl) {
@@ -1511,7 +1318,6 @@ function calcFinalExpected() {
     detailEl.textContent = `기준: ${src} | 월~수 비중: ${(pct*100).toFixed(1)}% | ${sitNames[currentSituation]} (×${correctionMultiplier.toFixed(2)})`;
   }
 }
-
 function applyToSalesTable() {
   const chName = document.getElementById('result-channel-select')?.value || '';
   const period = document.getElementById('week-start-select')?.value || '';
@@ -1529,8 +1335,6 @@ function applyToSalesTable() {
   renderSalesTable(); autoSave();
   showToast(`예상매출 ${amt.toLocaleString('ko-KR')}원 적용됨.`, 'success');
 }
-
-/* ── CHANNEL SELECTS (calc tab) ── */
 function populateChannelSelects() {
   ['calc-channel-select','result-channel-select'].forEach(id => {
     const sel = document.getElementById(id);
@@ -1549,8 +1353,6 @@ function populateChannelSelects() {
     else if (state.weekRanges.length) wkSel.value = state.weekRanges[state.weekRanges.length - 1];
   }
 }
-
-/* ── TAB SWITCHING ── */
 function switchTab(id) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -1564,16 +1366,11 @@ function switchTab(id) {
     renderDowTable(); calcFinalExpected();
   }
 }
-
-/* ── UTILS ── */
-/* escHtml: innerHTML에 삽입할 텍스트용 */
 function escHtml(str) {
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-/* escAttr: HTML attribute value용 (큰따옴표 이스케이프 포함) */
 function escAttr(str) { return escHtml(str); }
-
 function showToast(msg, type = 'info') {
   const c  = document.getElementById('toast-container');
   const el = document.createElement('div');
@@ -1582,8 +1379,6 @@ function showToast(msg, type = 'info') {
   c.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
-
-/* ── GLOBAL EXPORTS ── */
 const _g = window;
 _g.toggleTheme          = toggleTheme;
 _g.switchTab            = switchTab;
@@ -1618,13 +1413,7 @@ _g.applyToSalesTable    = applyToSalesTable;
 _g.saveToStorage        = saveToStorage;
 _g.exportToJSON         = exportToJSON;
 _g.importFromJSON       = importFromJSON;
-
-/* ── START ── */
 init();
-
-/* ── STICKY OFFSET ──
- * ch-header-row sticky 제거로 인해 ch-sticky-top 계산 불필요.
- * app-header 높이만 thead sticky top 값으로 사용함. */
 function updateStickyOffsets() {
   const appHeader = document.querySelector('.app-header');
   if (!appHeader) return;
@@ -1634,7 +1423,6 @@ function updateStickyOffsets() {
 (document.fonts?.ready || Promise.resolve()).then(updateStickyOffsets);
 setTimeout(updateStickyOffsets, 300);
 window.addEventListener('resize', updateStickyOffsets);
-
 }); // DOMContentLoaded
 </script>
 </body>
