@@ -723,7 +723,6 @@ let _db = null;
 let _unsubscribe = null;
 let _syncDocId = null;
 let _isSyncing = false;
-let _remoteUpdatePending = false;
 let _isFirstSnapshot = true;
 
 function _storageSet(k, v) { try { localStorage.setItem(k, v); } catch(e) { _mem[k] = v; } }
@@ -819,47 +818,73 @@ function startSync(docId) {
   setSyncStatus('syncing', '연결 중...');
   const docRef = doc(_db, 'salesData', docId);
   _unsubscribe = onSnapshot(docRef, (snap) => {
-    if (snap.exists()) {
-      const remote = snap.data();
-      const remoteTs = remote._updatedAt || 0;
-      const localTs  = parseInt(_storageGet('_syncTs_' + docId) || '0');
-      // 최초 연결 시: 클라우드 데이터가 있으면 무조건 수신 (내가 막 저장한 경우 제외)
-      // 이후 실시간 수신: 클라우드가 더 최신인 경우만 수신
-      const shouldReceive = _isFirstSnapshot
-        ? (remoteTs > 0 && !_isSyncing)
-        : (remoteTs > localTs && !_isSyncing);
-      if (shouldReceive) {
-        _remoteUpdatePending = true;
-        try {
-          const loaded = JSON.parse(remote.payload);
-          Object.assign(state, loaded);
-          filterState.periods.clear(); filterState.channels.clear();
-          rebuildWeekRanges(); renderSalesTable(); populateChannelSelects();
-          _storageSet(STORAGE_KEY, remote.payload);
-          _storageSet('_syncTs_' + docId, String(remoteTs));
-          showToast(_isFirstSnapshot ? '☁️ 클라우드 데이터로 동기화되었습니다.' : '☁️ 다른 기기에서 변경된 데이터가 적용되었습니다.', 'info');
-        } catch(e) { showToast('동기화 데이터 파싱 오류.', 'error'); }
-        _remoteUpdatePending = false;
-      }
+
+    // ① 내가 방금 cloudSave()로 쓴 데이터가 리스너로 되돌아온 경우 → 무시
+    if (_isSyncing) {
       _isFirstSnapshot = false;
       setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
-    } else {
+      return;
+    }
+
+    if (!snap.exists()) {
       // Firestore에 문서 없음 → 현재 기기 데이터를 최초 업로드
       _isFirstSnapshot = false;
-      setSyncStatus('connected', `신규 ID · 데이터 업로드 중...`);
+      setSyncStatus('syncing', '데이터 업로드 중...');
       cloudSave().then(() => {
         setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
         showToast(`☁️ 신규 ID "${docId}"로 데이터가 업로드되었습니다.`, 'success');
       });
+      return;
     }
+
+    const remote    = snap.data();
+    const remoteTs  = remote._updatedAt || 0;
+    const localTs   = parseInt(_storageGet('_syncTs_' + docId) || '0');
+
+    // ② 최초 연결: 로컬 데이터와 클라우드 데이터 중 더 최신 것을 기준으로 판단
+    if (_isFirstSnapshot) {
+      _isFirstSnapshot = false;
+      if (remoteTs > localTs) {
+        // 클라우드가 최신 → 수신 적용
+        _applyRemoteData(remote, docId, '☁️ 클라우드 최신 데이터로 동기화되었습니다.');
+      } else if (localTs > remoteTs) {
+        // 로컬이 최신 → 클라우드에 덮어쓰기
+        cloudSave();
+      }
+      // remoteTs === localTs: 동일하므로 아무것도 하지 않음
+      setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
+      return;
+    }
+
+    // ③ 이후 실시간 수신: 클라우드가 더 최신인 경우만 적용
+    if (remoteTs > localTs) {
+      _applyRemoteData(remote, docId, '☁️ 다른 기기에서 변경된 데이터가 적용되었습니다.');
+    }
+    setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
+
   }, (err) => {
     _isFirstSnapshot = false;
     setSyncStatus('error', '연결 오류: ' + err.code);
     showToast('동기화 오류: ' + err.message, 'error');
   });
 }
+
+function _applyRemoteData(remote, docId, toastMsg) {
+  try {
+    const loaded = JSON.parse(remote.payload);
+    Object.assign(state, loaded);
+    filterState.periods.clear(); filterState.channels.clear();
+    rebuildWeekRanges(); renderSalesTable(); populateChannelSelects();
+    _storageSet(STORAGE_KEY, remote.payload);
+    _storageSet('_syncTs_' + docId, String(remote._updatedAt || 0));
+    showToast(toastMsg, 'info');
+  } catch(e) {
+    showToast('동기화 데이터 파싱 오류.', 'error');
+  }
+}
+
 async function cloudSave() {
-  if (!_db || !_syncDocId || _remoteUpdatePending) return;
+  if (!_db || !_syncDocId) return;
   const { doc, setDoc, serverTimestamp } = window._firebaseModules;
   _isSyncing = true;
   const ts = Date.now();
@@ -874,7 +899,9 @@ async function cloudSave() {
   } catch(e) {
     showToast('클라우드 저장 오류: ' + e.message, 'error');
   }
-  _isSyncing = false;
+  // ④ isSyncing은 리스너가 콜백을 받은 직후 해제되어야 함
+  //    setDoc 완료 직후 즉시 false로 하면 리스너 콜백 전에 해제될 수 있으므로 한 틱 지연
+  setTimeout(() => { _isSyncing = false; }, 300);
 }
 function setSyncStatus(type, text) {
   const dot = document.getElementById('sync-dot');
