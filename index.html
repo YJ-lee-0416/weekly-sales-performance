@@ -6,13 +6,9 @@
 <title>📊 주차별 매출 성과표</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-window._firebaseModules = { initializeApp, getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp };
-window.dispatchEvent(new Event('firebaseReady'));
-</script>
+<!-- Firebase Realtime Database SDK (CPC 동기화 방식 동일) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -318,52 +314,77 @@ select.calc-sel:focus { outline: none; border-color: var(--accent); }
 @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 .text-mono { font-family: var(--mono); }
 select, input { color-scheme: inherit; }
-/* ── SYNC PANEL ── */
-.sync-panel {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+
+/* ── SYNC BAR (CPC 방식 동일) ── */
+.sync-bar {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 10px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border2); font-size: 11px; font-weight: 600;
+  color: var(--text3); background: var(--surface2);
+  white-space: nowrap; cursor: pointer; transition: all 0.2s; user-select: none;
 }
-.sync-panel-title { font-size: 12px; font-weight: 700; color: var(--text2); white-space: nowrap; }
-.sync-id-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px; }
-.sync-id-input {
-  flex: 1; background: var(--surface3); border: 1px solid var(--border2); color: var(--text);
-  padding: 5px 10px; border-radius: 6px; font-family: var(--mono); font-size: 12px;
+.sync-bar.syncing { border-color: rgba(79,142,247,0.4); background: var(--accent-glow); color: var(--accent); }
+.sync-bar.synced  { border-color: rgba(54,214,140,0.4); background: rgba(54,214,140,0.1); color: var(--green); }
+.sync-bar.error   { border-color: rgba(247,95,95,0.4);  background: rgba(247,95,95,0.1);  color: var(--red); }
+.sync-bar.offline { border-color: var(--border2); background: var(--surface2); color: var(--text3); }
+.sync-bar .s-dot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.sync-bar .s-dot.pulse { animation: sPulse 1s ease-in-out infinite; }
+@keyframes sPulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
+
+/* ── FIREBASE 설정 모달 ── */
+.fb-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55); z-index: 9000;
+  align-items: center; justify-content: center;
 }
-.sync-id-input:focus { outline: none; border-color: var(--accent); }
-.sync-status {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; color: var(--text3); white-space: nowrap;
+.fb-overlay.open { display: flex; }
+.fb-modal {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 24px; width: 480px;
+  max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
 }
-.sync-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--text3);
-  transition: background 0.3s;
+.fb-modal-hd {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;
 }
-.sync-dot.connected  { background: var(--green); box-shadow: 0 0 4px var(--green); }
-.sync-dot.syncing    { background: var(--yellow); animation: pulse 1s infinite; }
-.sync-dot.error      { background: var(--red); }
-@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-.sync-hint { font-size: 11px; color: var(--text3); line-height: 1.5; }
-.sync-config-section {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px;
+.fb-modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--text3); line-height: 1;
 }
-.sync-config-section summary {
-  font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer;
-  list-style: none; display: flex; align-items: center; gap: 6px;
+.fb-modal-close:hover { color: var(--text); }
+.fb-note {
+  font-size: 11px; color: var(--text3); line-height: 1.7;
+  margin-bottom: 14px; padding: 8px 10px;
+  background: var(--surface2); border-radius: 6px; border: 1px solid var(--border);
 }
-.sync-config-section summary::after { content: '▼'; font-size: 9px; color: var(--text3); }
-.sync-config-section[open] summary::after { content: '▲'; }
-.sync-config-body { padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-.sync-config-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.sync-config-row label { font-size: 11px; color: var(--text3); white-space: nowrap; min-width: 120px; }
-.sync-config-input {
-  flex: 1; background: var(--surface3); border: 1px solid var(--border2); color: var(--text);
-  padding: 4px 8px; border-radius: 5px; font-family: var(--mono); font-size: 11px; min-width: 200px;
+.fb-note a { color: var(--accent); text-decoration: none; }
+.fb-note a:hover { text-decoration: underline; }
+.fb-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.fb-field label { font-size: 11px; font-weight: 600; color: var(--text2); }
+.fb-field input {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 0 10px; height: 34px;
+  font-size: 12px; color: var(--text); font-family: var(--sans); outline: none;
 }
-.sync-config-input:focus { outline: none; border-color: var(--accent); }
-.sync-config-note { font-size: 10px; color: var(--text3); line-height: 1.6; padding: 6px 0; }
-.sync-config-note a { color: var(--accent); }
+.fb-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+.fb-section-lbl {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin: 14px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border);
+}
+.fb-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.fb-status { font-size: 11px; margin-top: 8px; min-height: 18px; }
+
+/* ── 충돌 해결 모달 ── */
+.conflict-body { display: flex; gap: 8px; margin: 14px 0; }
+.conflict-item {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px;
+}
+.conflict-item .c-src { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.conflict-item .c-val { font-size: 16px; font-weight: 700; color: var(--text); }
+.conflict-item .c-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -380,53 +401,15 @@ select, input { color-scheme: inherit; }
     <div class="theme-toggle-label">밝기<br>전환</div>
     <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-toggle-icon">☀️</button>
   </div>
+  <div style="display:flex;align-items:center;padding-bottom:8px;margin-left:8px;">
+    <div class="sync-bar offline" id="sync-bar" onclick="openFbCfg()" title="클라우드 동기화 설정">
+      <span class="s-dot" id="sync-dot"></span>
+      <span id="sync-label">동기화 미설정</span>
+    </div>
+  </div>
 </div>
 <!-- ===================== TAB 1: 매출 현황 ===================== -->
 <div id="tab-sales" class="tab-content active">
-
-  <!-- ☁️ 동기화 패널 -->
-  <details class="sync-config-section" id="sync-config-details">
-    <summary>☁️ 기기 간 데이터 동기화 설정</summary>
-    <div class="sync-config-body">
-      <div class="sync-config-note">
-        Firebase 프로젝트를 연결하면 동일한 <b>동기화 ID</b>를 사용하는 모든 기기에서 데이터가 자동으로 공유됩니다.<br>
-        <b>처음 설정 방법:</b> <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>에서 프로젝트 생성 → 웹 앱 추가 → Firestore Database 활성화 → 아래 항목 입력 후 저장
-      </div>
-      <div class="sync-config-row">
-        <label>API Key</label>
-        <input class="sync-config-input" id="fb-api-key" placeholder="AIzaSy..." autocomplete="off">
-      </div>
-      <div class="sync-config-row">
-        <label>Auth Domain</label>
-        <input class="sync-config-input" id="fb-auth-domain" placeholder="your-project.firebaseapp.com">
-      </div>
-      <div class="sync-config-row">
-        <label>Project ID</label>
-        <input class="sync-config-input" id="fb-project-id" placeholder="your-project-id">
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" onclick="saveFbConfig()">✅ Firebase 설정 저장 및 연결</button>
-        <button class="btn btn-danger btn-sm" onclick="clearFbConfig()">🗑 설정 초기화</button>
-      </div>
-    </div>
-  </details>
-
-  <!-- 동기화 상태 바 -->
-  <div class="sync-panel" id="sync-panel" style="display:none;">
-    <span class="sync-panel-title">☁️ 동기화</span>
-    <div class="sync-id-wrap">
-      <span style="font-size:11px;color:var(--text3);white-space:nowrap;">동기화 ID</span>
-      <input class="sync-id-input" id="sync-doc-id" placeholder="데이터 공유에 사용할 고유 ID" oninput="onSyncIdInput()">
-      <button class="btn btn-sm" onclick="connectSyncId()">🔗 연결</button>
-      <button class="btn btn-sm" onclick="copySyncId()">📋 복사</button>
-    </div>
-    <div class="sync-status">
-      <div class="sync-dot" id="sync-dot"></div>
-      <span id="sync-status-text">연결 안 됨</span>
-    </div>
-    <span class="sync-hint">다른 기기에서 동일한 ID를 입력하면 최신 데이터가 자동 적용됩니다.</span>
-  </div>
-
   <div class="ch-add-bar">
     <span style="font-size:12px;color:var(--text2);font-weight:600;">채널 추가</span>
     <select id="ch-select">
@@ -600,8 +583,8 @@ select, input { color-scheme: inherit; }
       <div class="manual-step">
         <div class="step-num">4</div>
         <div class="step-content">
-          <div class="step-title">저장</div>
-          <div class="step-desc">주차 추가 바 우측의 <b>💾 저장</b>을 클릭하면 브라우저 로컬스토리지에 저장됩니다. 백업은 <b>⬇ JSON 내보내기</b>를 활용하세요.</div>
+          <div class="step-title">저장 및 동기화</div>
+          <div class="step-desc">주차 추가 바 우측의 <b>💾 저장</b>을 클릭하면 로컬 및 클라우드에 저장됩니다. 상단 우측 <b>☁️ 동기화 설정</b> 버튼으로 Firebase를 연결하면 기기 간 자동 동기화가 활성화됩니다.</div>
         </div>
       </div>
       <div class="manual-faq">
@@ -611,50 +594,11 @@ select, input { color-scheme: inherit; }
         </div>
         <div class="faq-item">
           <div class="faq-q">새로고침 시 데이터가 사라지나요?</div>
-          <div class="faq-a">💾 저장 후에는 유지됩니다. 브라우저 캐시 전체 삭제 시 초기화될 수 있으니 JSON 백업을 권장합니다.</div>
-        </div>
-      </div>
-    </div>
-    <div class="manual-section">
-      <h2>☁️ 기기 간 동기화</h2>
-      <div class="manual-step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <div class="step-title">Firebase 프로젝트 생성</div>
-          <div class="step-desc"><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--accent);">Firebase Console</a>에 접속하여 새 프로젝트를 생성합니다. 이후 <b>웹 앱 추가(&lt;/&gt;)</b>를 클릭하여 API Key, Auth Domain, Project ID를 메모합니다.</div>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <div class="step-title">Firestore 활성화</div>
-          <div class="step-desc">Firebase Console 좌측 메뉴에서 <b>Firestore Database → 데이터베이스 만들기</b>를 클릭합니다. 보안 규칙은 <b>테스트 모드</b>로 시작하거나, 아래 규칙을 적용하세요.</div>
-          <span class="step-tip">💡 보안 규칙 예시: allow read, write: if true; (개인 사용 시 허용, 공개 배포 시 인증 추가 권장)</span>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <div class="step-title">Firebase 설정 입력</div>
-          <div class="step-desc">매출 현황 탭 상단 <b>"☁️ 기기 간 데이터 동기화 설정"</b>을 펼쳐 API Key, Auth Domain, Project ID를 입력 후 <b>"✅ Firebase 설정 저장 및 연결"</b>을 클릭합니다.</div>
-        </div>
-      </div>
-      <div class="manual-step">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <div class="step-title">동기화 ID 공유</div>
-          <div class="step-desc">연결 후 나타나는 <b>동기화 ID</b>를 다른 기기에서도 동일하게 입력하면 실시간으로 데이터가 공유됩니다. <b>📋 복사</b> 버튼으로 ID를 간편하게 전달하세요.</div>
-          <span class="step-tip">💡 동기화 ID는 브라우저에 기억됩니다. 한 번 설정하면 이후 자동 연결됩니다.</span>
-        </div>
-      </div>
-      <div class="manual-faq">
-        <div class="faq-item">
-          <div class="faq-q">데이터 충돌이 발생하면?</div>
-          <div class="faq-a">타임스탬프 기준으로 가장 최근에 저장된 데이터가 우선 적용됩니다.</div>
+          <div class="faq-a">💾 저장 후에는 유지됩니다. Firebase 동기화 연결 시 클라우드에도 자동 저장됩니다.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Firebase 없이 사용할 수 있나요?</div>
-          <div class="faq-a">네. Firebase 설정을 하지 않으면 기존과 동일하게 로컬 브라우저 저장 방식으로 작동합니다.</div>
+          <div class="faq-q">기기 간 동기화 설정 방법</div>
+          <div class="faq-a">상단 우측 <b>☁️ 동기화 설정</b>을 클릭하여 Firebase Realtime Database URL, API Key, Project ID 입력 후 연결하세요. 모든 기기에서 동일한 동기화 키를 사용하면 데이터가 공유됩니다.</div>
         </div>
       </div>
     </div>
@@ -686,6 +630,67 @@ select, input { color-scheme: inherit; }
   </div>
 </div>
 <div id="toast-container"></div>
+
+<!-- ── Firebase 설정 모달 ── -->
+<div class="fb-overlay" id="fb-cfg-ov">
+  <div class="fb-modal">
+    <div class="fb-modal-hd">
+      ☁️ 기기 간 동기화 설정
+      <button class="fb-modal-close" onclick="closeFbCfg()">✕</button>
+    </div>
+    <div class="fb-note">
+      Firebase <b>Realtime Database</b>를 연결하면 동일한 <b>동기화 키</b>를 사용하는 모든 기기에서 데이터가 실시간으로 공유됩니다.<br>
+      <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a>에서 프로젝트 생성 → Realtime Database 활성화 → 웹 앱 등록 후 아래 항목을 입력하세요.
+    </div>
+    <div class="fb-section-lbl">Firebase 프로젝트 정보</div>
+    <div class="fb-field">
+      <label>Database URL <span style="color:var(--red)">*</span></label>
+      <input id="fb-db-url" placeholder="https://your-project-default-rtdb.firebaseio.com">
+    </div>
+    <div class="fb-field">
+      <label>API Key <span style="color:var(--red)">*</span></label>
+      <input id="fb-api-key" placeholder="AIzaSy..." autocomplete="off">
+    </div>
+    <div class="fb-field">
+      <label>Project ID <span style="color:var(--red)">*</span></label>
+      <input id="fb-project-id" placeholder="your-project-id">
+    </div>
+    <div class="fb-section-lbl">동기화 설정</div>
+    <div class="fb-field">
+      <label>동기화 키 (같은 키를 입력한 기기끼리 데이터 공유)</label>
+      <input id="fb-sync-key" placeholder="예: sales_yjlee" value="shared">
+    </div>
+    <div class="fb-status" id="fb-cfg-status"></div>
+    <div class="fb-actions">
+      <button class="btn btn-danger btn-sm" onclick="disconnectFirebase()">🔌 연결 해제</button>
+      <button class="btn btn-primary btn-sm" onclick="connectFirebase()">✅ 저장 및 연결</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 충돌 해결 모달 ── -->
+<div class="fb-overlay" id="conflict-ov">
+  <div class="fb-modal">
+    <div class="fb-modal-hd">⚠️ 데이터 충돌 감지</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">이 기기와 클라우드에 서로 다른 데이터가 있습니다. 어느 데이터를 유지할지 선택하세요.</p>
+    <div class="conflict-body">
+      <div class="conflict-item">
+        <div class="c-src">📱 이 기기</div>
+        <div class="c-val" id="conflict-local-rows">—</div>
+        <div class="c-sub" id="conflict-local-time">—</div>
+      </div>
+      <div class="conflict-item">
+        <div class="c-src">☁️ 클라우드</div>
+        <div class="c-val" id="conflict-remote-rows">—</div>
+        <div class="c-sub" id="conflict-remote-time">—</div>
+      </div>
+    </div>
+    <div class="fb-actions">
+      <button class="btn btn-sm" onclick="resolveConflict('local')">📱 이 기기 유지</button>
+      <button class="btn btn-primary btn-sm" onclick="resolveConflict('remote')">☁️ 클라우드 적용</button>
+    </div>
+  </div>
+</div>
 <script>
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light-mode');
@@ -702,8 +707,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (el) el.textContent = t === 'light' ? '🌙' : '☀️';
 })();
 const STORAGE_KEY  = 'salesReportData_v2';
-const FB_CONFIG_KEY = 'fbConfig_v1';
-const SYNC_ID_KEY   = 'syncDocId_v1';
+const FB_CFG_KEY   = 'sales_fb_config_v1';
 const CHANNEL_LIST = ['스마트스토어','쿠팡','11번가','SSG','GSshop','지마켓','옥션','오늘의집','톡스토어','SK스토아','롯데아이몰','CJ온스타일'];
 const CH_COLORS    = ['#4f8ef7','#36d68c','#f7c948','#f75f5f','#6c5ef7','#f7936e','#56cfb2','#e879f9','#38bdf8','#fb7185','#a3e635','#fb923c'];
 const DOW_KEYS     = ['월','화','수','목','금','토','일'];
@@ -718,202 +722,212 @@ let editingChannel      = null;
 let filterState         = { periods: new Set(), channels: new Set() };
 const _mem = {};
 
-/* ─── Firebase 동기화 관련 변수 ─── */
-let _db = null;
-let _unsubscribe = null;
-let _syncDocId = null;
-let _isSyncing = false;
-let _isFirstSnapshot = true;
+/* ── Firebase 런타임 상태 (CPC 방식 동일) ── */
+let fbApp      = null;
+let fbDb       = null;
+let fbRef      = null;
+let fbListener = null;
+let isSyncing  = false;
+let remoteConflict = null;
 
 function _storageSet(k, v) { try { localStorage.setItem(k, v); } catch(e) { _mem[k] = v; } }
 function _storageGet(k) { try { const v = localStorage.getItem(k); if (v !== null) return v; } catch(e) {} return _mem[k] || null; }
 
-/* ─── Firebase 설정 저장/불러오기 ─── */
-function saveFbConfig() {
-  const cfg = {
-    apiKey:    document.getElementById('fb-api-key').value.trim(),
-    authDomain:document.getElementById('fb-auth-domain').value.trim(),
-    projectId: document.getElementById('fb-project-id').value.trim()
-  };
-  if (!cfg.apiKey || !cfg.projectId) { showToast('API Key와 Project ID는 필수입니다.', 'error'); return; }
-  _storageSet(FB_CONFIG_KEY, JSON.stringify(cfg));
-  showToast('Firebase 설정이 저장되었습니다. 연결 중...', 'info');
-  document.getElementById('sync-config-details').removeAttribute('open');
-  initFirebase(cfg);
+/* ── Firebase 설정 저장/불러오기 ── */
+function loadFbConfig() {
+  try { return JSON.parse(localStorage.getItem(FB_CFG_KEY) || 'null'); }
+  catch(e) { return null; }
 }
-function clearFbConfig() {
-  _storageSet(FB_CONFIG_KEY, '');
-  if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
-  _db = null; _syncDocId = null;
-  document.getElementById('sync-panel').style.display = 'none';
-  ['fb-api-key','fb-auth-domain','fb-project-id'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
-  showToast('Firebase 설정이 초기화되었습니다.', 'info');
-  setSyncStatus('disconnected', '연결 안 됨');
-}
-function loadFbConfigToUI() {
-  const raw = _storageGet(FB_CONFIG_KEY);
-  if (!raw) return null;
-  try {
-    const cfg = JSON.parse(raw);
-    const el1 = document.getElementById('fb-api-key');
-    const el2 = document.getElementById('fb-auth-domain');
-    const el3 = document.getElementById('fb-project-id');
-    if (el1) el1.value = cfg.apiKey || '';
-    if (el2) el2.value = cfg.authDomain || '';
-    if (el3) el3.value = cfg.projectId || '';
-    return cfg;
-  } catch(e) { return null; }
-}
-function initFirebase(cfg) {
-  if (!window._firebaseModules) {
-    window.addEventListener('firebaseReady', () => initFirebase(cfg), { once: true });
-    return;
-  }
-  const { initializeApp, getFirestore } = window._firebaseModules;
-  try {
-    const app = initializeApp(cfg, 'salesApp_' + Date.now());
-    _db = getFirestore(app);
-    document.getElementById('sync-panel').style.display = 'flex';
-    const savedId = _storageGet(SYNC_ID_KEY);
-    if (savedId) {
-      document.getElementById('sync-doc-id').value = savedId;
-      connectSyncId();
-    } else {
-      setSyncStatus('idle', 'ID를 입력하거나 신규 생성하세요');
-      showToast('Firebase 연결됨. 동기화 ID를 설정하세요.', 'success');
-    }
-  } catch(e) {
-    showToast('Firebase 초기화 오류: ' + e.message, 'error');
-    setSyncStatus('error', '초기화 오류');
-  }
-}
-function onSyncIdInput() { /* 실시간 피드백 불필요, 연결 버튼 사용 */ }
-function connectSyncId() {
-  if (!_db) { showToast('Firebase가 설정되지 않았습니다.', 'error'); return; }
-  const id = document.getElementById('sync-doc-id').value.trim();
-  if (!id) {
-    // 새 ID 자동 생성
-    const newId = 'sales_' + Math.random().toString(36).slice(2,10);
-    document.getElementById('sync-doc-id').value = newId;
-    _storageSet(SYNC_ID_KEY, newId);
-    startSync(newId);
-    showToast(`신규 동기화 ID 생성됨: ${newId}`, 'success');
-  } else {
-    _storageSet(SYNC_ID_KEY, id);
-    startSync(id);
-  }
-}
-function copySyncId() {
-  const id = document.getElementById('sync-doc-id').value.trim();
-  if (!id) { showToast('먼저 동기화 ID를 연결하세요.', 'error'); return; }
-  navigator.clipboard.writeText(id).then(() => showToast('동기화 ID가 클립보드에 복사되었습니다.', 'success'))
-    .catch(() => { showToast('복사 실패 — ID를 직접 선택하여 복사하세요.', 'error'); });
-}
-function startSync(docId) {
-  if (!_db) return;
-  const { doc, onSnapshot } = window._firebaseModules;
-  if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
-  _syncDocId = docId;
-  _isFirstSnapshot = true;
-  setSyncStatus('syncing', '연결 중...');
-  const docRef = doc(_db, 'salesData', docId);
-  _unsubscribe = onSnapshot(docRef, (snap) => {
-
-    // ① 내가 방금 cloudSave()로 쓴 데이터가 리스너로 되돌아온 경우 → 무시
-    if (_isSyncing) {
-      _isFirstSnapshot = false;
-      setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
-      return;
-    }
-
-    if (!snap.exists()) {
-      // Firestore에 문서 없음 → 현재 기기 데이터를 최초 업로드
-      _isFirstSnapshot = false;
-      setSyncStatus('syncing', '데이터 업로드 중...');
-      cloudSave().then(() => {
-        setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
-        showToast(`☁️ 신규 ID "${docId}"로 데이터가 업로드되었습니다.`, 'success');
-      });
-      return;
-    }
-
-    const remote    = snap.data();
-    const remoteTs  = remote._updatedAt || 0;
-    const localTs   = parseInt(_storageGet('_syncTs_' + docId) || '0');
-
-    // ② 최초 연결: 로컬 데이터와 클라우드 데이터 중 더 최신 것을 기준으로 판단
-    if (_isFirstSnapshot) {
-      _isFirstSnapshot = false;
-      if (remoteTs > localTs) {
-        // 클라우드가 최신 → 수신 적용
-        _applyRemoteData(remote, docId, '☁️ 클라우드 최신 데이터로 동기화되었습니다.');
-      } else if (localTs > remoteTs) {
-        // 로컬이 최신 → 클라우드에 덮어쓰기
-        cloudSave();
-      }
-      // remoteTs === localTs: 동일하므로 아무것도 하지 않음
-      setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
-      return;
-    }
-
-    // ③ 이후 실시간 수신: 클라우드가 더 최신인 경우만 적용
-    if (remoteTs > localTs) {
-      _applyRemoteData(remote, docId, '☁️ 다른 기기에서 변경된 데이터가 적용되었습니다.');
-    }
-    setSyncStatus('connected', `동기화됨 · ID: ${docId}`);
-
-  }, (err) => {
-    _isFirstSnapshot = false;
-    setSyncStatus('error', '연결 오류: ' + err.code);
-    showToast('동기화 오류: ' + err.message, 'error');
-  });
+function saveFbConfigToStorage(cfg) {
+  localStorage.setItem(FB_CFG_KEY, JSON.stringify(cfg));
 }
 
-function _applyRemoteData(remote, docId, toastMsg) {
-  try {
-    const loaded = JSON.parse(remote.payload);
-    Object.assign(state, loaded);
-    filterState.periods.clear(); filterState.channels.clear();
-    rebuildWeekRanges(); renderSalesTable(); populateChannelSelects();
-    _storageSet(STORAGE_KEY, remote.payload);
-    _storageSet('_syncTs_' + docId, String(remote._updatedAt || 0));
-    showToast(toastMsg, 'info');
-  } catch(e) {
-    showToast('동기화 데이터 파싱 오류.', 'error');
-  }
-}
-
-async function cloudSave() {
-  if (!_db || !_syncDocId) return;
-  const { doc, setDoc, serverTimestamp } = window._firebaseModules;
-  _isSyncing = true;
-  const ts = Date.now();
-  const payload = JSON.stringify(state);
-  try {
-    await setDoc(doc(_db, 'salesData', _syncDocId), {
-      payload,
-      _updatedAt: ts,
-      _serverTs: serverTimestamp()
-    });
-    _storageSet('_syncTs_' + _syncDocId, String(ts));
-  } catch(e) {
-    showToast('클라우드 저장 오류: ' + e.message, 'error');
-  }
-  // ④ isSyncing은 리스너가 콜백을 받은 직후 해제되어야 함
-  //    setDoc 완료 직후 즉시 false로 하면 리스너 콜백 전에 해제될 수 있으므로 한 틱 지연
-  setTimeout(() => { _isSyncing = false; }, 300);
-}
-function setSyncStatus(type, text) {
+/* ── 동기화 UI 상태 ── */
+function setSyncUI(st, msg) {
+  const bar = document.getElementById('sync-bar');
   const dot = document.getElementById('sync-dot');
-  const txt = document.getElementById('sync-status-text');
-  if (!dot || !txt) return;
-  dot.className = 'sync-dot';
-  if (type === 'connected') dot.classList.add('connected');
-  else if (type === 'syncing') dot.classList.add('syncing');
-  else if (type === 'error')  dot.classList.add('error');
-  txt.textContent = text;
+  const lbl = document.getElementById('sync-label');
+  if (!bar) return;
+  bar.className = 'sync-bar ' + st;
+  dot.className = 's-dot' + (st === 'syncing' ? ' pulse' : '');
+  lbl.textContent = msg;
 }
 
+/* ── Firebase 초기화 (CPC 방식 동일) ── */
+function initFirebase(cfg) {
+  if (fbListener) { fbListener(); fbListener = null; }
+  if (fbApp) {
+    try { fbApp.delete(); } catch(e) {}
+    fbApp = null; fbDb = null; fbRef = null;
+  }
+  try {
+    try { fbApp = firebase.app('sales-sync'); }
+    catch(e) { fbApp = firebase.initializeApp({ apiKey: cfg.apiKey, databaseURL: cfg.databaseURL, projectId: cfg.projectId }, 'sales-sync'); }
+    fbDb  = firebase.database(fbApp);
+    const syncKey = (cfg.syncKey || 'shared').replace(/[.#$[\]/]/g, '_');
+    fbRef = fbDb.ref('sales_report/' + syncKey);
+    return true;
+  } catch(e) {
+    console.error('[Sync] Firebase init error:', e);
+    return false;
+  }
+}
+
+/* ── 클라우드에 push (CPC 방식 동일) ── */
+function pushToCloud(data, force) {
+  if (!fbRef) return;
+  if (isSyncing && !force) return;
+  isSyncing = true;
+  setSyncUI('syncing', '동기화 중…');
+  const payload = { ...data, _syncedAt: firebase.database.ServerValue.TIMESTAMP };
+  fbRef.set(payload)
+    .then(() => { isSyncing = false; setSyncUI('synced', '동기화 완료'); })
+    .catch(err => { isSyncing = false; setSyncUI('error', '동기화 실패'); console.error('[Sync] push error:', err); });
+}
+
+/* ── 클라우드 수신 리스너 (CPC 방식 동일) ── */
+function attachListener() {
+  if (!fbRef) return;
+  setSyncUI('syncing', '연결 중…');
+  const unsubscribe = fbRef.on('value',
+    snapshot => {
+      const remote = snapshot.val();
+      if (!remote) {
+        // 클라우드에 데이터 없음 → 이 기기 데이터를 최초 업로드
+        state.updatedAt = state.updatedAt || Date.now();
+        pushToCloud(state, true);
+        return;
+      }
+      if (isSyncing) {
+        setSyncUI('synced', '동기화 완료');
+        return;
+      }
+      const localTs  = state.updatedAt || 0;
+      const remoteTs = remote.updatedAt || remote._syncedAt || 0;
+      if (remoteTs <= localTs) {
+        setSyncUI('synced', '동기화 완료');
+        return;
+      }
+      // 원격이 최신 — 로컬 데이터가 있고 24시간 이내 차이면 충돌 모달
+      const hasLocalData = state.channels && state.channels.length > 0;
+      if (hasLocalData && localTs > 0 && (remoteTs - localTs) < 86400000) {
+        showConflictModal(remote);
+      } else {
+        applyRemoteData(remote);
+      }
+    },
+    err => {
+      setSyncUI('error', '연결 오류: ' + (err.code || err.message));
+      console.error('[Sync] listener error:', err);
+    }
+  );
+  fbListener = () => fbRef.off('value', unsubscribe);
+  setSyncUI('synced', '동기화 활성');
+}
+
+/* ── 원격 데이터 적용 ── */
+function applyRemoteData(remote) {
+  const cleaned = { ...remote };
+  delete cleaned._syncedAt;
+  if (!cleaned.commonDow) cleaned.commonDow = { 일:14.3, 월:14.3, 화:14.3, 수:14.3, 목:14.3, 금:14.3, 토:14.3 };
+  if (!cleaned.channels)  cleaned.channels  = [];
+  if (!cleaned.weekRanges) cleaned.weekRanges = [];
+  state = cleaned;
+  _storageSet(STORAGE_KEY, JSON.stringify(state));
+  filterState.periods.clear(); filterState.channels.clear();
+  rebuildWeekRanges(); renderSalesTable(); populateChannelSelects();
+  setSyncUI('synced', '동기화 완료');
+  showToast('☁️ 클라우드에서 최신 데이터를 불러왔습니다.', 'info');
+}
+
+/* ── 충돌 모달 ── */
+function showConflictModal(remote) {
+  remoteConflict = remote;
+  const lRows = (state.channels || []).reduce((s, c) => s + (c.rows || []).length, 0);
+  const rRows = (remote.channels || []).reduce((s, c) => s + (c.rows || []).length, 0);
+  document.getElementById('conflict-local-rows').textContent  = lRows + '개 주차 행';
+  document.getElementById('conflict-local-time').textContent  = new Date(state.updatedAt || 0).toLocaleString('ko-KR');
+  document.getElementById('conflict-remote-rows').textContent = rRows + '개 주차 행';
+  document.getElementById('conflict-remote-time').textContent = new Date(remote.updatedAt || remote._syncedAt || 0).toLocaleString('ko-KR');
+  document.getElementById('conflict-ov').classList.add('open');
+  setSyncUI('error', '충돌 해결 필요');
+}
+function resolveConflict(winner) {
+  document.getElementById('conflict-ov').classList.remove('open');
+  if (winner === 'remote') {
+    applyRemoteData(remoteConflict);
+  } else {
+    state.updatedAt = Date.now();
+    autoSave();
+    showToast('📱 이 기기 데이터를 클라우드에 업로드했습니다.', 'success');
+  }
+  remoteConflict = null;
+}
+
+/* ── Firebase 설정 모달 액션 ── */
+function openFbCfg() {
+  const cfg = loadFbConfig() || {};
+  document.getElementById('fb-db-url').value     = cfg.databaseURL || '';
+  document.getElementById('fb-api-key').value    = cfg.apiKey      || '';
+  document.getElementById('fb-project-id').value = cfg.projectId   || '';
+  document.getElementById('fb-sync-key').value   = cfg.syncKey     || 'shared';
+  document.getElementById('fb-cfg-status').textContent = '';
+  document.getElementById('fb-cfg-ov').classList.add('open');
+}
+function closeFbCfg() { document.getElementById('fb-cfg-ov').classList.remove('open'); }
+
+function connectFirebase() {
+  const cfg = {
+    databaseURL: document.getElementById('fb-db-url').value.trim(),
+    apiKey:      document.getElementById('fb-api-key').value.trim(),
+    projectId:   document.getElementById('fb-project-id').value.trim(),
+    syncKey:     document.getElementById('fb-sync-key').value.trim() || 'shared'
+  };
+  const statusEl = document.getElementById('fb-cfg-status');
+  if (!cfg.databaseURL || !cfg.apiKey || !cfg.projectId) {
+    statusEl.style.color = 'var(--red)'; statusEl.textContent = '⚠ Database URL, API Key, Project ID는 필수입니다.'; return;
+  }
+  if (!cfg.databaseURL.startsWith('https://')) {
+    statusEl.style.color = 'var(--red)'; statusEl.textContent = '⚠ Database URL은 https://로 시작해야 합니다.'; return;
+  }
+  statusEl.style.color = 'var(--accent)'; statusEl.textContent = '🔄 연결 테스트 중…';
+  saveFbConfigToStorage(cfg);
+  const ok = initFirebase(cfg);
+  if (!ok) {
+    statusEl.style.color = 'var(--red)'; statusEl.textContent = '⚠ Firebase 초기화 실패. 설정값을 확인하세요.'; setSyncUI('error', '연결 실패'); return;
+  }
+  fbDb.ref('.info/connected').once('value')
+    .then(snap => {
+      if (snap.val() === true) {
+        statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ 연결 성공!';
+        attachListener();
+        setTimeout(() => closeFbCfg(), 1200);
+      } else {
+        statusEl.style.color = 'var(--yellow)'; statusEl.textContent = '⚠ 연결 확인 불가. 그래도 진행합니다.';
+        attachListener();
+        setTimeout(() => closeFbCfg(), 1500);
+      }
+    })
+    .catch(err => { statusEl.style.color = 'var(--red)'; statusEl.textContent = '⚠ 연결 오류: ' + (err.message || err.code); setSyncUI('error', '연결 오류'); });
+}
+function disconnectFirebase() {
+  if (fbListener) { fbListener(); fbListener = null; }
+  if (fbApp) { try { fbApp.delete(); } catch(e) {} fbApp = null; fbDb = null; fbRef = null; }
+  localStorage.removeItem(FB_CFG_KEY);
+  setSyncUI('offline', '동기화 미설정');
+  closeFbCfg();
+  showToast('🔌 동기화가 해제되었습니다.', 'info');
+}
+function autoConnectFirebase() {
+  const cfg = loadFbConfig();
+  if (!cfg || !cfg.databaseURL || !cfg.apiKey) { setSyncUI('offline', '동기화 미설정'); return; }
+  setSyncUI('syncing', '자동 연결 중…');
+  const ok = initFirebase(cfg);
+  if (ok) attachListener();
+  else    setSyncUI('error', '자동 연결 실패');
+}
+
+/* ── 로컬 저장 (updatedAt 포함) ── */
 function init() {
   const saved = _storageGet(STORAGE_KEY);
   if (saved) {
@@ -924,22 +938,15 @@ function init() {
   populateChannelSelects();
   setSituation('normal');
   updateWeekAddPreview();
-  // Firebase 자동 초기화
-  const cfg = loadFbConfigToUI();
-  if (cfg && cfg.apiKey && cfg.projectId) {
-    if (window._firebaseModules) initFirebase(cfg);
-    else window.addEventListener('firebaseReady', () => initFirebase(cfg), { once: true });
-  }
+  autoConnectFirebase();   // ← 저장된 Firebase 설정 있으면 자동 연결
 }
 function autoSave() {
+  state.updatedAt = state.updatedAt || Date.now();  // 타임스탬프 유지
   try { _storageSet(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
-  // 클라우드 동기화 (debounce)
-  if (_db && _syncDocId) {
-    clearTimeout(window._cloudSaveTimer);
-    window._cloudSaveTimer = setTimeout(cloudSave, 800);
-  }
+  pushToCloud(state);  // ← 클라우드 push (CPC 방식 동일)
 }
 function saveToStorage() {
+  state.updatedAt = Date.now();   // 💾 저장 시 타임스탬프 갱신
   autoSave();
   const btn = document.getElementById('save-btn');
   if (btn) {
@@ -970,6 +977,7 @@ function importFromJSON(input) {
     try {
       const loaded = JSON.parse(e.target.result);
       Object.assign(state, loaded);
+      state.updatedAt = Date.now();  // 가져오기 시 타임스탬프 갱신
       filterState.periods.clear();
       filterState.channels.clear();
       rebuildWeekRanges();
@@ -1763,11 +1771,15 @@ _g.applyToSalesTable    = applyToSalesTable;
 _g.saveToStorage        = saveToStorage;
 _g.exportToJSON         = exportToJSON;
 _g.importFromJSON       = importFromJSON;
-_g.saveFbConfig         = saveFbConfig;
-_g.clearFbConfig        = clearFbConfig;
-_g.connectSyncId        = connectSyncId;
-_g.copySyncId           = copySyncId;
-_g.onSyncIdInput        = onSyncIdInput;
+_g.openFbCfg            = openFbCfg;
+_g.closeFbCfg           = closeFbCfg;
+_g.connectFirebase      = connectFirebase;
+_g.disconnectFirebase   = disconnectFirebase;
+_g.resolveConflict      = resolveConflict;
+// 모달 오버레이 클릭 시 닫기
+document.querySelectorAll('.fb-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
 init();
 function updateStickyOffsets() {
   const appHeader = document.querySelector('.app-header');
